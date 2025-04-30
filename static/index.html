@@ -1,0 +1,580 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>Whatsapp Bot</title>  
+    <script src="https://cdn.tailwindcss.com"></script>  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>  
+    <style>  
+        body {  
+            padding-bottom: 60px;
+        }  
+    </style>  
+</head>  
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">  
+    <div class="container mx-auto max-w-3xl p-6">  
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden">  
+            <!-- Header -->  
+            <div class="bg-blue-600 text-white p-6 text-center">  
+                <h1 class="text-3xl font-bold">Whatsapp Bot</h1>
+                <p id="status" class="mt-2 text-blue-100">Memeriksa Status...</p>  
+            </div>  
+
+            <!-- Koneksi Kontrol -->  
+            <div class="p-6">  
+                <!-- Tombol Koneksi -->  
+                <div class="flex justify-center space-x-4 mb-6">  
+                    <button id="connectButton" onclick="connect()"   
+                        class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-300 disabled:opacity-50">  
+                        Connect  
+                    </button>  
+                    <button id="disconnectButton" onclick="disconnect()"   
+                        class="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition duration-300 disabled:opacity-50" disabled>  
+                        Disconnect  
+                    </button>  
+                </div>  
+
+                <!-- QR Code Section -->  
+                <div id="qrcodeSection" class="text-center mb-6 hidden">  
+                    <h2 class="text-xl font-semibold mb-4">Scan QR Code</h2>  
+                    <img id="qrcode" src="" alt="QR Code" class="mx-auto max-w-xs">  
+                    <p id="qrcode-message" class="mt-4 text-gray-600"></p>  
+                </div>  
+
+                <!-- Section Pengiriman Pesan -->  
+                <div data-message-section class="hidden">  
+                    <!-- Pilihan Pengiriman Pesan -->  
+                    <div class="flex justify-center space-x-4 mb-6">  
+                        <button onclick="showSingleMessageForm()"   
+                            class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-300">  
+                            Kirim Pesan Tunggal  
+                        </button>  
+                        <button onclick="showCSVMessageForm()"   
+                            class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-300">  
+                            Kirim Pesan Massal  
+                        </button>  
+                    </div>  
+
+                    <!-- Form Pesan Tunggal -->  
+                    <div id="singleMessageForm" class="hidden">  
+                        <div class="space-y-4">  
+                            <input type="text" id="singlePhone" placeholder="Nomor Telepon"   
+                                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">  
+                            <textarea id="singleMessage" placeholder="Tulis Pesan" rows="4"   
+                                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>  
+                            <button onclick="sendSingleMessage()"   
+                                class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300">  
+                                Kirim Pesan  
+                            </button>  
+                        </div>  
+                    </div>  
+
+                    <!-- Form Pesan Massal CSV -->  
+                    <div id="csvMessageForm" class="hidden">  
+                        <div class="border-2 border-dashed border-blue-300 p-6 rounded-lg text-center">  
+                            <input type="file" id="csvFile" accept=".csv"   
+                                class="hidden" onchange="handleCSVFile(event)">  
+                            <label for="csvFile"   
+                                class="cursor-pointer flex flex-col items-center justify-center">  
+                                <svg class="w-12 h-12 text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">  
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />  
+                                </svg>  
+                                <p class="text-gray-600">Unggah File CSV</p>  
+                            </label>  
+                        </div>  
+
+                        <div id="csvPreview" class="mt-4 hidden">  
+                            <div class="bg-gray-100 p-4 rounded-lg">  
+                                <h3 class="font-semibold mb-2">Pratinjau Data</h3>  
+                                <div id="phoneNumberList" class="max-h-40 overflow-y-auto"></div>  
+                                <p id="csvStats" class="text-sm text-gray-600 mt-2"></p>  
+                            </div>  
+
+                            <textarea id="massMessage" placeholder="Tulis Pesan Massal" rows="4"   
+                                class="w-full mt-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>  
+
+                            <div class="flex space-x-4 mt-4">  
+                                <button id="sendMassButton" onclick="sendMessageToMultiple()"   
+                                    class="flex-grow bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition duration-300" disabled>  
+                                    Kirim Pesan Massal  
+                                </button>  
+                                <button id="downloadLogButton" onclick="downloadErrorLog()"   
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300 hidden">  
+                                    Download Log Error  
+                                </button>  
+                            </div>  
+                        </div>  
+                    </div>  
+                </div>  
+            </div>  
+        </div>  
+    </div>  
+
+    <!-- Loading Overlay -->  
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">  
+        <div class="bg-white p-6 rounded-lg shadow-xl flex items-center">  
+            <svg class="animate-spin h-8 w-8 mr-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">  
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>  
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>  
+            </svg>  
+            <span id="loadingText">Sedang memproses...</span>  
+        </div>  
+    </div>  
+
+    <!-- Footer -->  
+    <footer class="fixed bottom-0 left-0 w-full bg-gray-800 text-white py-3 text-center">  
+        <div class="container mx-auto px-4">  
+            <p class="text-sm">  
+                Developed by   
+                <a href="mailto:irvanirawanit@gmail.com"   
+                class="hover:text-blue-300 transition duration-300 underline">  
+                    Irvan Irawan  
+                </a>  
+                © 2024  
+            </p>  
+        </div>  
+    </footer>
+
+    <script>  
+        // Konfigurasi Awal  
+        const API_BASE_URL = window.location.origin;  
+        let connectionStatus = { Connected: false, LoggedIn: false };  
+        let errorLog = [];  
+        const MAX_RETRIES = 3;  
+
+        // Fungsi Utility  
+        function showLoading(text = 'Sedang memproses...') {  
+            const overlay = document.getElementById('loadingOverlay');  
+            const loadingText = document.getElementById('loadingText');  
+            loadingText.textContent = text;  
+            overlay.classList.remove('hidden');  
+        }  
+
+        function hideLoading() {  
+            const overlay = document.getElementById('loadingOverlay');  
+            overlay.classList.add('hidden');  
+        }  
+
+        async function fetchWithRetry(endpoint, method = 'GET', body = null, retries = MAX_RETRIES) {  
+            try {  
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {  
+                    method: method,  
+                    headers: {   
+                        'Content-Type': 'application/json',  
+                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`  
+                    },  
+                    body: body ? JSON.stringify(body) : null  
+                });  
+
+                if (!response.ok) {  
+                    throw new Error('Request failed');  
+                }  
+
+                return await response.json();  
+            } catch (error) {  
+                if (retries > 0) {  
+                    console.log(`Retry ${MAX_RETRIES - retries + 1} for ${endpoint}`);  
+                    return fetchWithRetry(endpoint, method, body, retries - 1);  
+                }  
+                throw error;  
+            }  
+        }  
+
+        function downloadErrorLog() {  
+            if (errorLog.length === 0) {  
+                alert('Tidak ada log error');  
+                return;  
+            }  
+
+            const logContent = errorLog.map(log =>   
+                `Nomor: ${log.phone}, Pesan: ${log.message}, Error: ${log.error}`  
+            ).join('\n');  
+
+            const blob = new Blob([logContent], { type: 'text/plain' });  
+            const url = URL.createObjectURL(blob);  
+            const a = document.createElement('a');  
+            a.href = url;  
+            a.download = `error_log_${new Date().toISOString().replace(/:/g, '-')}.txt`;  
+            a.click();  
+            URL.revokeObjectURL(url);  
+        }  
+
+        // Fungsi Handle CSV  
+        // Fungsi Handle CSV  
+        function handleCSVFile(event) {  
+            const file = event.target.files[0];  
+            const csvPreview = document.getElementById('csvPreview');  
+            const phoneList = document.getElementById('phoneNumberList');  
+            const csvStats = document.getElementById('csvStats');  
+            const sendButton = document.getElementById('sendMassButton');  
+            const massMessage = document.getElementById('massMessage');  
+
+            // Reset error log dan tombol  
+            errorLog = [];  
+            document.getElementById('downloadLogButton').classList.add('hidden');  
+
+            if (!file || file.type !== 'text/csv') {  
+                alert('Pilih file CSV yang valid');  
+                return;  
+            }  
+
+            Papa.parse(file, {  
+                complete: function(results) {  
+                    const phoneNumbers = results.data  
+                        .flat()  
+                        .map(p => p.toString().trim())  
+                        .map(p => p.replace(/[^\d+]/g, ''));  
+
+                    if (phoneNumbers.length === 0) {  
+                        alert('Tidak ada nomor telepon di file CSV');  
+                        return;  
+                    }  
+
+                    // Tampilkan nomor telepon  
+                    phoneList.innerHTML = phoneNumbers  
+                        .slice(0, 10)  
+                        .map(p => `<div class="text-sm">${p}</div>`)  
+                        .join('');  
+
+                    // Perbarui statistik  
+                    csvStats.textContent = `Total nomor: ${phoneNumbers.length}`;  
+                    
+                    // Tampilkan preview  
+                    csvPreview.classList.remove('hidden');  
+
+                    // Aktifkan textarea pesan  
+                    massMessage.disabled = false;  
+                    massMessage.placeholder = 'Tulis pesan massal';  
+                    massMessage.focus(); // Fokus ke textarea  
+
+                    // Listener untuk validasi pengiriman  
+                    massMessage.addEventListener('input', () => {  
+                        sendButton.disabled = !massMessage.value.trim();  
+                    });  
+                },  
+                skipEmptyLines: true  
+            });  
+        }  
+        // Fungsi Kirim Pesan Massal  
+        async function sendMessageToMultiple() {  
+            const message = document.getElementById('massMessage').value.trim();  
+            const phoneNumbers = Array.from(document.getElementById('phoneNumberList').children)  
+                .map(el => el.textContent.trim());  
+            const sendButton = document.getElementById('sendMassButton');  
+            const downloadLogButton = document.getElementById('downloadLogButton');  
+
+            if (phoneNumbers.length === 0) {  
+                alert('Tidak ada nomor telepon');  
+                return;  
+            }  
+
+            if (!message) {  
+                alert('Pesan tidak boleh kosong');  
+                return;  
+            }  
+
+            // Reset error log  
+            errorLog = [];  
+            downloadLogButton.classList.add('hidden');  
+
+            showLoading('Mengirim pesan...');  
+            sendButton.disabled = true;  
+
+            try {  
+                const results = await Promise.all(  
+                    phoneNumbers.map(async (phone) => {  
+                        try {  
+                            const response = await fetchWithRetry('/messages', 'POST', {   
+                                Phone: phone,   
+                                Message: message   
+                            });  
+                            return { phone, success: response.message === "Message sent successfully." };  
+                        } catch (error) {  
+                            errorLog.push({   
+                                phone,   
+                                message,   
+                                error: error.toString()   
+                            });  
+                            return { phone, success: false };  
+                        }  
+                    })  
+                );  
+
+                const successCount = results.filter(r => r.success).length;  
+                const failedCount = results.filter(r => !r.success).length;  
+
+                // Tampilkan hasil  
+                alert(`  
+                    Pengiriman Selesai  
+                    Total Nomor: ${phoneNumbers.length}  
+                    Berhasil Terkirim: ${successCount}  
+                    Gagal: ${failedCount}  
+                `);  
+
+                // Tampilkan tombol download log jika ada error  
+                if (errorLog.length > 0) {  
+                    downloadLogButton.classList.remove('hidden');  
+                }  
+
+                // Reset form  
+                document.getElementById('massMessage').value = '';  
+                document.getElementById('csvFile').value = '';  
+                document.getElementById('csvPreview').classList.add('hidden');  
+            } catch (error) {  
+                console.error('Error mengirim pesan massal:', error);  
+                alert('Terjadi kesalahan saat mengirim pesan');  
+            } finally {  
+                hideLoading();  
+                sendButton.disabled = false;  
+            }  
+        }  
+
+        // Fungsi Utility Fetch  
+        async function fetchAPI(endpoint, method = 'GET', body = null) {  
+            try {  
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {  
+                    method: method,  
+                    headers: {   
+                        'Content-Type': 'application/json',  
+                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`  
+                    },  
+                    body: body ? JSON.stringify(body) : null  
+                });  
+
+                if (!response.ok) {  
+                    throw new Error('Request failed');  
+                }  
+
+                return await response.json();  
+            } catch (error) {  
+                console.error('API Error:', error);  
+                return null;  
+            }  
+        }  
+
+        // Fungsi Validasi Nomor Telepon  
+        function validatePhoneNumber(phone) {  
+            const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{6,10}$/;  
+            return phoneRegex.test(phone);  
+        }  
+
+        // Update UI Koneksi  
+        function updateConnectionUI() {  
+            const statusElement = document.getElementById('status');  
+            const connectButton = document.getElementById('connectButton');  
+            const disconnectButton = document.getElementById('disconnectButton');  
+            const qrcodeSection = document.getElementById('qrcodeSection');  
+            const messageSection = document.querySelector('[data-message-section]');  
+
+            if (connectionStatus.Connected && connectionStatus.LoggedIn) {  
+                statusElement.textContent = 'Terhubung dan Login';  
+                statusElement.className = 'mt-2 text-green-500';  
+                
+                connectButton.disabled = true;  
+                disconnectButton.disabled = false;  
+                qrcodeSection.classList.add('hidden');  
+                messageSection.classList.remove('hidden');  
+            } else if (connectionStatus.Connected && !connectionStatus.LoggedIn) {  
+                statusElement.textContent = 'Butuh Scan QR Code';  
+                statusElement.className = 'mt-2 text-yellow-500';  
+                
+                connectButton.disabled = true;  
+                disconnectButton.disabled = false;  
+                qrcodeSection.classList.remove('hidden');  
+                messageSection.classList.add('hidden');  
+                
+                fetchQRCode();  
+            } else {  
+                statusElement.textContent = 'Tidak Terhubung';  
+                statusElement.className = 'mt-2 text-red-500';  
+                
+                connectButton.disabled = false;  
+                disconnectButton.disabled = true;  
+                qrcodeSection.classList.add('hidden');  
+                messageSection.classList.add('hidden');  
+            }  
+        }  
+
+        // Fungsi Pengecekan Status  
+        async function checkStatus() {  
+            try {  
+                const response = await fetchAPI('/status');  
+                
+                if (response && response.data) {  
+                    connectionStatus = response.data;  
+                    updateConnectionUI();  
+                }  
+            } catch (error) {  
+                console.error('Gagal mengambil status:', error);  
+            }  
+        }  
+
+        // Fungsi Connect  
+        async function connect() {  
+            try {  
+                const response = await fetchAPI('/connect');  
+                
+                if (response && response.message === "Connected successfully.") {  
+                    alert('Berhasil terhubung. Silakan scan QR Code.');  
+                    setTimeout(checkStatus, 2000);  
+                } else {  
+                    alert('Gagal terhubung. Silakan coba lagi.');  
+                }  
+            } catch (error) {  
+                console.error('Error saat connect:', error);  
+                alert('Terjadi kesalahan saat menghubungkan.');  
+            }  
+        }  
+
+        // Fungsi Disconnect  
+        async function disconnect() {  
+            try {  
+                const response = await fetchAPI('/disconnect');  
+                
+                if (response && response.message) {  
+                    alert(response.message);  
+                    setTimeout(checkStatus, 2000);  
+                } else {  
+                    alert('Gagal memutuskan koneksi.');  
+                }  
+            } catch (error) {  
+                console.error('Error saat disconnect:', error);  
+                alert('Terjadi kesalahan saat memutuskan koneksi.');  
+            }  
+        }  
+
+        // Fungsi Ambil QR Code  
+        async function fetchQRCode() {  
+            try {  
+                const response = await fetchAPI('/qrcode');
+                
+                if (response && response.QRCode) {  
+                    const qrcodeImg = document.getElementById('qrcode');  
+                    const qrcodeMessage = document.getElementById('qrcode-message');  
+                    
+                    // Menggunakan properti QRCode sesuai dengan respons API
+                    qrcodeImg.src = response.QRCode;  
+                    qrcodeMessage.textContent = response.message || 'Silakan scan QR Code';
+                    
+                    // Pastikan bagian QR code terlihat
+                    document.getElementById('qrcodeSection').classList.remove('hidden');
+                } else {
+                    console.error('Format respons QR code tidak valid:', response);
+                    document.getElementById('qrcode-message').textContent = 'Gagal memuat QR Code. Silakan coba lagi.';
+                }
+            } catch (error) {  
+                console.error('Gagal mengambil QR Code:', error);
+                document.getElementById('qrcode-message').textContent = 'Terjadi kesalahan saat memuat QR Code';
+            }  
+        }
+
+        // Fungsi Kirim Pesan Tunggal  
+        async function sendSingleMessage() {  
+            const phone = document.getElementById('singlePhone').value.trim();  
+            const message = document.getElementById('singleMessage').value.trim();  
+
+            if (!validatePhoneNumber(phone)) {  
+                alert('Nomor telepon tidak valid');  
+                return;  
+            }  
+
+            if (!message) {  
+                alert('Pesan tidak boleh kosong');  
+                return;  
+            }  
+
+            try {  
+                const response = await fetchAPI('/messages', 'POST', {   
+                    Phone: phone,   
+                    Message: message   
+                });  
+
+                if (response && response.message === "Message sent successfully.") {  
+                    alert('Pesan berhasil dikirim');  
+                    // Reset form  
+                    document.getElementById('singlePhone').value = '';  
+                    document.getElementById('singleMessage').value = '';  
+                } else {  
+                    alert('Gagal mengirim pesan');  
+                }  
+            } catch (error) {  
+                console.error('Error mengirim pesan:', error);  
+                alert('Terjadi kesalahan saat mengirim pesan');  
+            }  
+        }  
+
+        
+        // Fungsi Kirim Pesan Massal  
+        async function sendMessageToMultiple() {  
+            const message = document.getElementById('massMessage').value.trim();  
+            const validPhones = Array.from(document.getElementById('phoneNumberList').children)  
+                .map(el => el.textContent.trim());  
+
+            if (validPhones.length === 0) {  
+                alert('Tidak ada nomor telepon valid');  
+                return;  
+            }  
+
+            if (!message) {  
+                alert('Pesan tidak boleh kosong');  
+                return;  
+            }  
+
+            try {  
+                const responses = await Promise.all(  
+                    validPhones.map(phone =>   
+                        fetchAPI('/messages', 'POST', {   
+                            Phone: phone,   
+                            Message: message   
+                        })  
+                    )  
+                );  
+
+                const successCount = responses.filter(  
+                    res => res && res.message === "Message sent successfully."  
+                ).length;  
+
+                alert(`Pesan berhasil dikirim ke ${successCount} dari ${validPhones.length} nomor`);  
+                
+                // Reset form  
+                document.getElementById('massMessage').value = '';  
+                document.getElementById('csvFile').value = '';  
+                document.getElementById('csvPreview').classList.add('hidden');  
+            } catch (error) {  
+                console.error('Error mengirim pesan massal:', error);  
+                alert('Terjadi kesalahan saat mengirim pesan massal');  
+            }  
+        }  
+
+        // Fungsi Tampilan  
+        function showSingleMessageForm() {  
+            document.getElementById('singleMessageForm').classList.remove('hidden');  
+            document.getElementById('csvMessageForm').classList.add('hidden');  
+        }  
+
+        function showCSVMessageForm() {  
+            document.getElementById('csvFile').value = '';  
+            document.getElementById('massMessage').value = '';  
+            document.getElementById('massMessage').disabled = true;  
+            document.getElementById('massMessage').placeholder = 'Unggah file CSV terlebih dahulu';  
+            document.getElementById('csvPreview').classList.add('hidden');  
+            document.getElementById('sendMassButton').disabled = true;  
+            document.getElementById('downloadLogButton').classList.add('hidden');  
+
+            // Tampilkan form CSV  
+            document.getElementById('csvMessageForm').classList.remove('hidden');  
+            document.getElementById('singleMessageForm').classList.add('hidden');  
+        }  
+
+        // Polling Status  
+        function startStatusPolling() {  
+            checkStatus();  
+            setInterval(checkStatus, 5000);  
+        }  
+
+        // Inisialisasi  
+        document.addEventListener('DOMContentLoaded', startStatusPolling);  
+    </script>  
+</body>  
+</html>

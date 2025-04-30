@@ -1,0 +1,4 @@
+go.sum
+users.db
+whatsapp.db
+*.env
