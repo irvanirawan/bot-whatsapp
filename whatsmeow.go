@@ -27,7 +27,7 @@ func (meowController *WhatsMeowController) StartClient() {
 	fmt.Println("Starting WhatsApp client...")
 
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
-	container, err := sqlstore.New("sqlite", "file:whatsapp.db?_foreign_keys=on&_pragma=foreign_keys(1)", dbLog)
+	container, err := sqlstore.New(context.Background(), "sqlite", "file:whatsapp.db?_foreign_keys=on&_pragma=foreign_keys(1)", dbLog)
 	if err != nil {
 		panic(err)
 	}
@@ -35,13 +35,13 @@ func (meowController *WhatsMeowController) StartClient() {
 	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_SAFARI.Enum()
 
 	// Get the first device in the container
-	deviceStore, err := container.GetFirstDevice()
+	deviceStore, err := container.GetFirstDevice(context.Background())
 	if err != nil {
 		panic(err)
 	}
 	deviceStore.PushName = "RVN"
 	deviceStore.Platform = "Android"
-	deviceStore.Save()
+	deviceStore.Save(context.Background())
 
 	clientLog := waLog.Stdout("Client", "DEBUG", true)
 	meowController.Client = whatsmeow.NewClient(deviceStore, clientLog)
@@ -115,7 +115,7 @@ func (meowController *WhatsMeowController) Logout() {
 		return
 	} else {
 		if meowController.Client.IsLoggedIn() && meowController.Client.IsConnected() {
-			meowController.Client.Logout()
+			meowController.Client.Logout(context.Background())
 		} else {
 			fmt.Println("Client not logged in or connected.")
 		}
